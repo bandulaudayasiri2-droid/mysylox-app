@@ -1,0 +1,1349 @@
+<!DOCTYPE html>
+<html lang="si">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>MySylox — Global Video Platform</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2">
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,600;14..32,700;14..32,800&display=swap" rel="stylesheet">
+    <style>
+        /* ----- RESET & BASE ----- */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        :root {
+            --primary: #ff4d4d;
+            --primary-dark: #cc0000;
+            --bg-body: #0b0b0e;
+            --bg-card: #16161a;
+            --bg-input: #24242e;
+            --text: #f1f1f5;
+            --text-secondary: #a0a0b0;
+            --radius: 16px;
+            --radius-lg: 28px;
+            --shadow: 0 20px 40px -12px rgba(0, 0, 0, 0.8);
+            --transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        body {
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            background: var(--bg-body);
+            color: var(--text);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: var(--bg-body);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: var(--primary);
+            border-radius: 10px;
+        }
+
+        /* ----- LOGIN OVERLAY (Animated Background) ----- */
+        .login-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 9999;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: radial-gradient(circle at 20% 30%, #1a0a0a, #0a0a0f 70%);
+            padding: 20px;
+        }
+        .login-overlay::before {
+            content: '';
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle at 70% 80%, #4a1a1a, transparent 50%),
+                radial-gradient(circle at 10% 50%, #2a1a3a, transparent 40%);
+            animation: floatBg 12s ease-in-out infinite alternate;
+        }
+        @keyframes floatBg {
+            0% {
+                transform: scale(1) rotate(0deg);
+            }
+            100% {
+                transform: scale(1.1) rotate(3deg);
+            }
+        }
+        .login-card {
+            position: relative;
+            background: rgba(22, 22, 26, 0.7);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 56px;
+            padding: 48px 40px;
+            text-align: center;
+            max-width: 400px;
+            width: 100%;
+            box-shadow: var(--shadow), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+            animation: popIn 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        @keyframes popIn {
+            0% {
+                opacity: 0;
+                transform: scale(0.9) translateY(20px);
+            }
+            100% {
+                opacity: 1;
+                transform: scale(1) translateY(0);
+            }
+        }
+        .login-card .logo-big {
+            font-size: 72px;
+            margin-bottom: 8px;
+            display: block;
+        }
+        .login-card h1 {
+            font-size: 2.6rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--primary), #ffb347);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            letter-spacing: -1px;
+        }
+        .login-card p {
+            color: var(--text-secondary);
+            margin: 12px 0 28px;
+            font-size: 0.95rem;
+        }
+        .auth-btn {
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            border: none;
+            padding: 16px 32px;
+            border-radius: 60px;
+            font-weight: 700;
+            color: white;
+            cursor: pointer;
+            width: 100%;
+            font-size: 1rem;
+            transition: var(--transition);
+            box-shadow: 0 8px 24px rgba(255, 77, 77, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        .auth-btn:hover {
+            transform: scale(1.02);
+            box-shadow: 0 12px 32px rgba(255, 77, 77, 0.5);
+        }
+
+        /* ----- HEADER (Glassy) ----- */
+        .header {
+            position: sticky;
+            top: 0;
+            background: rgba(11, 11, 14, 0.85);
+            backdrop-filter: blur(18px);
+            -webkit-backdrop-filter: blur(18px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            padding: 12px 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            z-index: 100;
+        }
+        .logo-area {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+            flex-shrink: 0;
+        }
+        .logo-area .logo-icon {
+            font-size: 28px;
+        }
+        .logo-text {
+            font-size: 22px;
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--primary), #ffb347);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+        .header-search {
+            flex: 1;
+            max-width: 480px;
+            background: var(--bg-input);
+            border-radius: 60px;
+            padding: 10px 20px;
+            border: 1px solid transparent;
+            color: var(--text);
+            font-size: 0.9rem;
+            transition: var(--transition);
+            outline: none;
+        }
+        .header-search:focus {
+            border-color: var(--primary);
+            background: #1a1a22;
+        }
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-shrink: 0;
+        }
+        .upload-trigger {
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            border: none;
+            padding: 10px 24px;
+            border-radius: 60px;
+            font-weight: 600;
+            color: white;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 4px 16px rgba(255, 77, 77, 0.25);
+        }
+        .upload-trigger:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(255, 77, 77, 0.4);
+        }
+        .avatar {
+            width: 42px;
+            height: 42px;
+            background: linear-gradient(135deg, var(--primary), #ffb347);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-size: cover;
+            cursor: pointer;
+            border: 2px solid transparent;
+            transition: var(--transition);
+            font-weight: 700;
+            flex-shrink: 0;
+        }
+        .avatar:hover {
+            border-color: white;
+            transform: scale(1.05);
+        }
+        .nav-btn {
+            background: transparent;
+            border: 1px solid #2a2a35;
+            padding: 8px 18px;
+            border-radius: 60px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: var(--transition);
+            font-weight: 600;
+        }
+        .nav-btn:hover {
+            border-color: var(--primary);
+            color: white;
+        }
+
+        /* ----- MAIN CONTAINER ----- */
+        .container {
+            max-width: 1440px;
+            margin: 0 auto;
+            padding: 24px 24px 40px;
+        }
+
+        /* ----- SECTION TITLE ----- */
+        .section-title {
+            font-size: 1.6rem;
+            font-weight: 700;
+            margin: 0 0 24px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .section-title span {
+            background: var(--primary);
+            width: 6px;
+            height: 32px;
+            border-radius: 10px;
+            display: inline-block;
+        }
+
+        /* ----- VIDEO GRID (Modern Cards) ----- */
+        .video-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 28px;
+        }
+        .video-card {
+            background: var(--bg-card);
+            border-radius: var(--radius-lg);
+            overflow: hidden;
+            cursor: pointer;
+            border: 1px solid #1f1f28;
+            transition: var(--transition);
+            position: relative;
+        }
+        .video-card:hover {
+            transform: translateY(-6px);
+            border-color: var(--primary);
+            box-shadow: 0 24px 48px -12px rgba(0, 0, 0, 0.8);
+        }
+        .thumbnail {
+            width: 100%;
+            aspect-ratio: 16/9;
+            background: linear-gradient(145deg, #121216, #0a0a0e);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 48px;
+            position: relative;
+            overflow: hidden;
+        }
+        .thumbnail .play-overlay {
+            position: absolute;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: var(--transition);
+            font-size: 60px;
+            backdrop-filter: blur(4px);
+        }
+        .video-card:hover .play-overlay {
+            opacity: 1;
+        }
+        .duration {
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+            background: rgba(0, 0, 0, 0.85);
+            padding: 3px 10px;
+            border-radius: 30px;
+            font-size: 12px;
+            font-weight: 600;
+            letter-spacing: 0.3px;
+        }
+        .card-info {
+            padding: 16px 18px 18px;
+        }
+        .video-title {
+            font-weight: 600;
+            font-size: 1rem;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            line-height: 1.4;
+        }
+        .creator-name {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            margin-top: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: var(--transition);
+        }
+        .creator-name:hover {
+            color: white;
+        }
+        .creator-name .mini-avatar {
+            width: 24px;
+            height: 24px;
+            background: linear-gradient(135deg, var(--primary), #ffb347);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            background-size: cover;
+            flex-shrink: 0;
+        }
+        .stats {
+            display: flex;
+            gap: 18px;
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            margin-top: 12px;
+            border-top: 1px solid #1f1f28;
+            padding-top: 12px;
+        }
+        .stats span {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .delete-btn {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            background: rgba(0, 0, 0, 0.7);
+            border: none;
+            color: white;
+            width: 34px;
+            height: 34px;
+            border-radius: 50%;
+            cursor: pointer;
+            z-index: 20;
+            backdrop-filter: blur(4px);
+            transition: var(--transition);
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .delete-btn:hover {
+            background: var(--primary);
+            transform: scale(1.1);
+        }
+
+        /* ----- EMPTY STATE ----- */
+        .empty-state {
+            text-align: center;
+            padding: 80px 20px;
+            color: var(--text-secondary);
+            grid-column: 1 / -1;
+        }
+        .empty-state .big-icon {
+            font-size: 64px;
+            margin-bottom: 16px;
+            opacity: 0.6;
+        }
+        .empty-state h3 {
+            color: var(--text);
+            margin-bottom: 8px;
+        }
+
+        /* ----- UPLOAD MODAL (Beautiful Popup) ----- */
+        .upload-modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            z-index: 500;
+            display: none;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            animation: fadeIn 0.25s ease;
+        }
+        .upload-modal-overlay.active {
+            display: flex;
+        }
+        @keyframes fadeIn {
+            0% {
+                opacity: 0;
+            }
+            100% {
+                opacity: 1;
+            }
+        }
+        .upload-modal {
+            background: var(--bg-card);
+            border-radius: 48px;
+            padding: 40px 36px;
+            max-width: 540px;
+            width: 100%;
+            border: 1px solid #2a2a35;
+            box-shadow: var(--shadow);
+            animation: slideUp 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        @keyframes slideUp {
+            0% {
+                opacity: 0;
+                transform: translateY(40px) scale(0.96);
+            }
+            100% {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+        .upload-modal .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+        }
+        .upload-modal .modal-header h2 {
+            font-size: 1.6rem;
+            font-weight: 700;
+        }
+        .modal-close {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            font-size: 28px;
+            cursor: pointer;
+            transition: var(--transition);
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .modal-close:hover {
+            background: #2a2a35;
+            color: white;
+        }
+        .upload-dropzone {
+            border: 2px dashed #3a3a45;
+            border-radius: 32px;
+            padding: 48px 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: var(--transition);
+            margin-bottom: 20px;
+            background: rgba(255, 255, 255, 0.02);
+        }
+        .upload-dropzone.drag-over {
+            border-color: var(--primary);
+            background: rgba(255, 77, 77, 0.06);
+            transform: scale(1.01);
+        }
+        .upload-dropzone .icon {
+            font-size: 48px;
+            margin-bottom: 8px;
+        }
+        .upload-dropzone p {
+            color: var(--text-secondary);
+        }
+        .upload-dropzone .browse {
+            color: var(--primary);
+            font-weight: 600;
+        }
+        .upload-modal input[type="text"] {
+            background: var(--bg-input);
+            border: 1px solid #3a3a45;
+            padding: 16px 20px;
+            border-radius: 60px;
+            color: white;
+            width: 100%;
+            margin-bottom: 16px;
+            outline: none;
+            font-size: 1rem;
+            transition: var(--transition);
+        }
+        .upload-modal input[type="text"]:focus {
+            border-color: var(--primary);
+        }
+        .upload-modal .file-label {
+            background: var(--bg-input);
+            border: 1px solid #3a3a45;
+            border-radius: 60px;
+            padding: 16px 20px;
+            color: var(--text-secondary);
+            display: block;
+            cursor: pointer;
+            transition: var(--transition);
+            margin-bottom: 20px;
+            text-align: center;
+            font-weight: 500;
+        }
+        .upload-modal .file-label.has-file {
+            border-color: var(--primary);
+            color: var(--text);
+        }
+        .upload-modal .publish-btn {
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            border: none;
+            padding: 16px;
+            border-radius: 60px;
+            font-weight: 700;
+            color: white;
+            cursor: pointer;
+            width: 100%;
+            font-size: 1rem;
+            transition: var(--transition);
+            box-shadow: 0 8px 24px rgba(255, 77, 77, 0.25);
+        }
+        .upload-modal .publish-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+        .upload-modal .publish-btn:not(:disabled):hover {
+            transform: scale(1.02);
+            box-shadow: 0 12px 32px rgba(255, 77, 77, 0.4);
+        }
+        .upload-progress-bar {
+            width: 100%;
+            height: 6px;
+            background: #2a2a35;
+            border-radius: 10px;
+            margin: 16px 0 8px;
+            overflow: hidden;
+            display: none;
+        }
+        .upload-progress-bar.active {
+            display: block;
+        }
+        .upload-progress-bar .fill {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, var(--primary), #ffb347);
+            border-radius: 10px;
+            transition: width 0.3s ease;
+        }
+
+        /* ----- VIDEO PLAYER (Immersive) ----- */
+        .video-player-container {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.92);
+            backdrop-filter: blur(20px);
+            z-index: 999;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            animation: fadeIn 0.3s ease;
+        }
+        .video-player-container video {
+            width: 100%;
+            max-height: 70vh;
+            max-width: 1200px;
+            border-radius: 24px;
+            box-shadow: 0 40px 80px rgba(0, 0, 0, 0.8);
+            background: #000;
+        }
+        .close-player {
+            position: absolute;
+            top: 24px;
+            right: 24px;
+            background: rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .close-player:hover {
+            background: var(--primary);
+            transform: rotate(90deg);
+        }
+        .player-info {
+            width: 100%;
+            max-width: 1200px;
+            margin-top: 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+        .player-info .left {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            cursor: pointer;
+        }
+        .player-info .left .p-avatar {
+            width: 48px;
+            height: 48px;
+            background: linear-gradient(135deg, var(--primary), #ffb347);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-size: cover;
+            font-size: 20px;
+            flex-shrink: 0;
+        }
+        .player-info .left .p-name {
+            font-weight: 700;
+            font-size: 1.1rem;
+        }
+        .player-info .left .p-views {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+        #playerLikeBtn {
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 12px 32px;
+            border-radius: 60px;
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            font-size: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            backdrop-filter: blur(8px);
+        }
+        #playerLikeBtn:hover {
+            background: rgba(255, 77, 77, 0.2);
+            border-color: var(--primary);
+        }
+        #playerLikeBtn.liked {
+            background: var(--primary);
+            border-color: var(--primary);
+            box-shadow: 0 0 24px rgba(255, 77, 77, 0.3);
+        }
+
+        /* ----- CHANNEL PAGE (Banner) ----- */
+        .channel-header {
+            background: linear-gradient(145deg, #121216, #0a0a0e);
+            border-radius: 40px;
+            padding: 36px 40px;
+            margin-bottom: 32px;
+            display: flex;
+            gap: 28px;
+            flex-wrap: wrap;
+            align-items: center;
+            border: 1px solid #1f1f28;
+            position: relative;
+            overflow: hidden;
+        }
+        .channel-header::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(circle at 20% 30%, rgba(255, 77, 77, 0.05), transparent 60%);
+            pointer-events: none;
+        }
+        .channel-avatar {
+            width: 100px;
+            height: 100px;
+            background: linear-gradient(135deg, var(--primary), #ffb347);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 48px;
+            background-size: cover;
+            border: 4px solid var(--primary);
+            box-shadow: 0 0 40px rgba(255, 77, 77, 0.15);
+            flex-shrink: 0;
+            position: relative;
+        }
+        .channel-info h2 {
+            font-size: 1.8rem;
+            font-weight: 700;
+        }
+        .channel-info p {
+            color: var(--text-secondary);
+            margin-top: 4px;
+        }
+        .channel-info .meta {
+            display: flex;
+            gap: 20px;
+            margin-top: 8px;
+            font-size: 0.9rem;
+        }
+
+        /* ----- TOAST (Top Right) ----- */
+        .toast-container {
+            position: fixed;
+            top: 80px;
+            right: 24px;
+            z-index: 99999;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            max-width: 360px;
+            width: 100%;
+            pointer-events: none;
+        }
+        .toast {
+            background: var(--bg-card);
+            border-left: 6px solid var(--primary);
+            padding: 16px 20px;
+            border-radius: 20px;
+            box-shadow: 0 20px 48px rgba(0, 0, 0, 0.6);
+            color: var(--text);
+            font-weight: 500;
+            animation: slideInRight 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            border: 1px solid #2a2a35;
+            pointer-events: all;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            backdrop-filter: blur(12px);
+        }
+        .toast.error {
+            border-left-color: #f44336;
+        }
+        .toast.success {
+            border-left-color: #4caf50;
+        }
+        @keyframes slideInRight {
+            0% {
+                opacity: 0;
+                transform: translateX(40px);
+            }
+            100% {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        /* ----- RESPONSIVE ----- */
+        @media (max-width: 640px) {
+            .header {
+                padding: 10px 16px;
+                flex-wrap: wrap;
+                gap: 8px;
+            }
+            .header-search {
+                order: 3;
+                flex-basis: 100%;
+                max-width: 100%;
+            }
+            .logo-text {
+                font-size: 18px;
+            }
+            .upload-trigger span {
+                display: none;
+            }
+            .upload-trigger {
+                padding: 10px 16px;
+            }
+            .video-grid {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+            .login-card {
+                padding: 32px 24px;
+            }
+            .upload-modal {
+                padding: 28px 20px;
+            }
+            .channel-header {
+                padding: 24px;
+                flex-direction: column;
+                text-align: center;
+            }
+            .player-info {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            #playerLikeBtn {
+                width: 100%;
+                justify-content: center;
+            }
+            .container {
+                padding: 16px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- TOAST CONTAINER -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <!-- LOGIN OVERLAY -->
+    <div id="loginOverlay" class="login-overlay">
+        <div class="login-card">
+            <span class="logo-big">🎬</span>
+            <h1>MySylox</h1>
+            <p>🌍 ඔබගේ Google ගිණුමෙන් පුරනය වන්න</p>
+            <button id="googleSignInBtn" class="auth-btn">🔐 Sign in with Google</button>
+        </div>
+    </div>
+
+    <!-- HEADER -->
+    <div class="header" id="mainHeader" style="display:none">
+        <div class="logo-area" id="homeLogo">
+            <span class="logo-icon">🎬</span>
+            <span class="logo-text">MySylox</span>
+        </div>
+        <input class="header-search" placeholder="🔍 Search videos..." disabled>
+        <div class="header-actions">
+            <button class="upload-trigger" id="headerUploadTrigger">📤 <span>Upload</span></button>
+            <button class="nav-btn" id="myVideosNavBtn">📹 My Videos</button>
+            <div class="avatar" id="avatarBtn">👤</div>
+        </div>
+    </div>
+
+    <!-- MAIN CONTAINER -->
+    <div class="container" id="mainContainer" style="display:none"></div>
+
+    <!-- UPLOAD MODAL (Hidden by default) -->
+    <div class="upload-modal-overlay" id="uploadModal">
+        <div class="upload-modal">
+            <div class="modal-header">
+                <h2>📤 Upload Video</h2>
+                <button class="modal-close" id="modalCloseBtn">✕</button>
+            </div>
+            <div class="upload-dropzone" id="modalDropzone">
+                <div class="icon">🎬</div>
+                <p>Drag & drop your video here</p>
+                <p style="font-size:0.85rem;color:#666;margin-top:4px;">or <span class="browse">browse files</span></p>
+                <input type="file" id="modalFileInput" accept="video/mp4,video/webm" style="display:none">
+            </div>
+            <input type="text" id="modalTitle" placeholder="Enter video title..." maxlength="100">
+            <div class="file-label" id="modalFileLabel">📁 No file selected</div>
+            <button class="publish-btn" id="modalPublishBtn" disabled>🚀 Publish</button>
+            <div class="upload-progress-bar" id="modalProgressBar"><div class="fill" id="modalProgressFill"></div></div>
+            <div style="text-align:center;font-size:0.85rem;color:var(--text-secondary);margin-top:8px;" id="modalProgressText"></div>
+        </div>
+    </div>
+
+    <script>
+        const SUPABASE_URL = "https://huzcuspzhqttbujcfpcw.supabase.co";
+        const SUPABASE_ANON_KEY = "sb_publishable_2Xxi-VeACFEGYziBBNSY4g_NK-Ki6rm";
+        const supabase = supabaseJs.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, { auth: { autoRefreshToken: true,
+                persistSession: true, detectSessionInUrl: true } });
+
+        let currentUser = null,
+            videosList = [],
+            usersList = [],
+            likesList = [],
+            currentView = 'home';
+
+        // ----- TOAST SYSTEM (Top Right) -----
+        function showToast(msg, isError = false) {
+            const container = document.getElementById('toastContainer');
+            const t = document.createElement('div');
+            t.className = `toast ${isError ? 'error' : 'success'}`;
+            t.innerHTML = `<span>${isError ? '❌' : '✅'}</span> ${msg}`;
+            container.appendChild(t);
+            setTimeout(() => { t.style.opacity = '0';
+                t.style.transform = 'translateX(40px)';
+                setTimeout(() => t.remove(), 300); }, 3500);
+        }
+
+        function escapeHtml(s) {
+            if (!s) return '';
+            return String(s).replace(/[&<>]/g, function(m) { if (m === '&') return '&amp;'; if (m === '<') return '&lt;';
+                if (m === '>') return '&gt;'; return m; });
+        }
+
+        function formatNumber(n) {
+            if (n >= 1e6) return (n / 1e6).toFixed(1) + 'M';
+            if (n >= 1e3) return (n / 1e3).toFixed(1) + 'K';
+            return n.toString();
+        }
+
+        function getVideoDuration(file) {
+            return new Promise((resolve) => {
+                const video = document.createElement('video');
+                video.preload = 'metadata';
+                video.onloadedmetadata = () => {
+                    const sec = video.duration;
+                    if (isFinite(sec)) { const m = Math.floor(sec / 60),
+                            s = Math.floor(sec % 60);
+                        resolve(`${m}:${s.toString().padStart(2,'0')}`); } else resolve('0:00');
+                    URL.revokeObjectURL(video.src);
+                };
+                video.onerror = () => { resolve('0:00');
+                    URL.revokeObjectURL(video.src); };
+                video.src = URL.createObjectURL(file);
+            });
+        }
+
+        // ----- AUTH -----
+        async function handleGoogleSignIn() {
+            try {
+                showToast("🔄 Opening Google login...");
+                const url = window.location.href.split('?')[0].split('#')[0];
+                const { error } = await supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: url } });
+                if (error) throw error;
+            } catch (e) { showToast("Login failed: " + e.message, true); }
+        }
+
+        async function checkSession() {
+            const { data: { session }, error } = await supabase.auth.getSession();
+            if (error || !session) return false;
+            const userData = {
+                id: session.user.id,
+                email: session.user.email,
+                display_name: session.user.user_metadata.full_name || session.user.email.split('@')[0],
+                avatar_url: session.user.user_metadata.avatar_url
+            };
+            await supabase.from('users').upsert(userData, { onConflict: 'id' });
+            currentUser = {
+                id: session.user.id,
+                email: session.user.email,
+                displayName: userData.display_name,
+                avatar: session.user.user_metadata.avatar_url
+            };
+            localStorage.setItem('mysylox_session', JSON.stringify({ userId: session.user.id, expires: Date.now() + 7 *
+                    24 * 60 * 60 * 1000 }));
+            document.getElementById('loginOverlay').style.display = 'none';
+            document.getElementById('mainHeader').style.display = 'flex';
+            document.querySelector('.container').style.display = 'block';
+            await loadData();
+            renderHome();
+            updateAvatar();
+            showToast(`✨ Welcome ${currentUser.displayName}! ✨`);
+            return true;
+        }
+
+        supabase.auth.onAuthStateChange((e) => { if (e === 'SIGNED_IN') location.reload(); });
+
+        function updateAvatar() {
+            const a = document.getElementById('avatarBtn');
+            if (currentUser) {
+                if (currentUser.avatar) {
+                    a.style.backgroundImage = `url(${currentUser.avatar})`;
+                    a.style.backgroundSize = 'cover';
+                    a.innerHTML = '';
+                } else {
+                    a.innerHTML = currentUser.displayName?.charAt(0)?.toUpperCase() || '👤';
+                }
+            }
+        }
+
+        // ----- DATA -----
+        async function loadData() {
+            try {
+                const [u, v, l] = await Promise.all([
+                    supabase.from('users').select('*'),
+                    supabase.from('videos').select('*').order('created_at', { ascending: false }),
+                    supabase.from('likes').select('*')
+                ]);
+                usersList = u.data || [];
+                videosList = v.data || [];
+                likesList = l.data || [];
+            } catch (e) { console.error(e); }
+        }
+
+        // ----- DELETE -----
+        async function deleteVideo(id) {
+            if (!confirm("Delete this video?")) return;
+            const vid = videosList.find(v => v.id === id);
+            if (!vid || vid.user_id !== currentUser.id) {
+                showToast("Only owner can delete", true);
+                return;
+            }
+            try {
+                showToast("🗑️ Deleting...");
+                if (vid.video_url) {
+                    const fn = vid.video_url.split('/').pop();
+                    await supabase.storage.from('videos').remove([fn]);
+                }
+                const { error } = await supabase.from('videos').delete().eq('id', id).eq('user_id', currentUser.id);
+                if (error) throw error;
+                showToast("✅ Deleted");
+                await loadData();
+                renderMyVideos();
+            } catch (e) {
+                showToast("Delete failed: " + e.message, true);
+            }
+        }
+
+        // ----- UPLOAD CORE -----
+        async function uploadVideo(title, file) {
+            if (!title || !file) throw new Error("Title and file required");
+            if (!file.type.startsWith('video/')) throw new Error("Video file required");
+            if (file.size > 200 * 1024 * 1024) throw new Error("Max 200 MB");
+            showToast("📤 Uploading...");
+
+            // Progress bar update (simulated / real)
+            const bar = document.getElementById('modalProgressBar');
+            const fill = document.getElementById('modalProgressFill');
+            const text = document.getElementById('modalProgressText');
+            bar.classList.add('active');
+            let progress = 0;
+            const interval = setInterval(() => {
+                progress += Math.random() * 10;
+                if (progress > 95) progress = 95;
+                fill.style.width = progress + '%';
+                text.textContent = `⏳ Uploading ${Math.round(progress)}%...`;
+            }, 300);
+
+            try {
+                const vidId = `vid_${Date.now()}_${Math.random().toString(36).substr(2,8)}`;
+                const ext = file.name.split('.').pop();
+                const fileName = `${vidId}.${ext}`;
+                const { error: upErr } = await supabase.storage.from('videos').upload(fileName, file, { cacheControl: '3600',
+                    contentType: file.type });
+                if (upErr) throw upErr;
+                const { data: { publicUrl } } = supabase.storage.from('videos').getPublicUrl(fileName);
+                const duration = await getVideoDuration(file);
+                const { error: dbErr } = await supabase.from('videos').insert({
+                    id: vidId,
+                    user_id: currentUser.id,
+                    title: escapeHtml(title).substring(0, 100),
+                    video_url: publicUrl,
+                    duration: duration,
+                    views: 0
+                });
+                if (dbErr) throw dbErr;
+
+                clearInterval(interval);
+                fill.style.width = '100%';
+                text.textContent = '✅ Done!';
+                setTimeout(() => { bar.classList.remove('active');
+                    fill.style.width = '0%';
+                    text.textContent = ''; }, 1000);
+
+                showToast(`✅ "${title}" uploaded!`);
+                await loadData();
+                renderHome();
+                closeModal();
+            } catch (e) {
+                clearInterval(interval);
+                bar.classList.remove('active');
+                fill.style.width = '0%';
+                text.textContent = '';
+                throw e;
+            }
+        }
+
+        // ----- MODAL LOGIC -----
+        const modal = document.getElementById('uploadModal');
+        const dropzone = document.getElementById('modalDropzone');
+        const fileInput = document.getElementById('modalFileInput');
+        const fileLabel = document.getElementById('modalFileLabel');
+        const titleInput = document.getElementById('modalTitle');
+        const publishBtn = document.getElementById('modalPublishBtn');
+        let selectedFile = null;
+
+        function openModal() {
+            if (!currentUser) { showToast("Please sign in first", true); return; }
+            modal.classList.add('active');
+            resetModalForm();
+        }
+
+        function closeModal() {
+            modal.classList.remove('active');
+            resetModalForm();
+        }
+
+        function resetModalForm() {
+            titleInput.value = '';
+            fileInput.value = '';
+            selectedFile = null;
+            fileLabel.textContent = '📁 No file selected';
+            fileLabel.classList.remove('has-file');
+            publishBtn.disabled = true;
+            dropzone.classList.remove('drag-over');
+            document.getElementById('modalProgressBar').classList.remove('active');
+            document.getElementById('modalProgressFill').style.width = '0%';
+            document.getElementById('modalProgressText').textContent = '';
+        }
+
+        document.getElementById('headerUploadTrigger').onclick = openModal;
+        document.getElementById('modalCloseBtn').onclick = closeModal;
+        modal.addEventListener('click', (e) => { if (e.target === modal) closeModal(); });
+
+        dropzone.addEventListener('click', () => fileInput.click());
+        dropzone.addEventListener('dragover', (e) => { e.preventDefault();
+            dropzone.classList.add('drag-over'); });
+        dropzone.addEventListener('dragleave', () => dropzone.classList.remove('drag-over'));
+        dropzone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropzone.classList.remove('drag-over');
+            const f = e.dataTransfer.files[0];
+            if (f) handleFileSelect(f);
+        });
+
+        fileInput.addEventListener('change', () => {
+            if (fileInput.files.length > 0) handleFileSelect(fileInput.files[0]);
+        });
+
+        function handleFileSelect(f) {
+            if (!f.type.startsWith('video/')) { showToast('Please select a video file', true); return; }
+            if (f.size > 200 * 1024 * 1024) { showToast('Max 200 MB', true); return; }
+            selectedFile = f;
+            fileLabel.textContent = `📹 ${f.name} (${(f.size/1024/1024).toFixed(1)} MB)`;
+            fileLabel.classList.add('has-file');
+            publishBtn.disabled = false;
+        }
+
+        publishBtn.addEventListener('click', async () => {
+            const title = titleInput.value.trim();
+            if (!title) { showToast('Please enter a title', true); return; }
+            if (!selectedFile) { showToast('Please select a video', true); return; }
+            publishBtn.disabled = true;
+            publishBtn.textContent = '⏳ Uploading...';
+            try {
+                await uploadVideo(title, selectedFile);
+                publishBtn.textContent = '🚀 Publish';
+                publishBtn.disabled = false;
+            } catch (e) {
+                showToast(e.message, true);
+                publishBtn.textContent = '🚀 Publish';
+                publishBtn.disabled = false;
+            }
+        });
+
+        // ----- RENDER VIDEO GRID -----
+        function renderVideoGrid(videoArray, containerId, showDeleteBtn = false) {
+            const c = document.getElementById(containerId);
+            if (!c) return;
+            c.innerHTML = '';
+            if (!videoArray || videoArray.length === 0) {
+                c.innerHTML =
+                    `<div class="empty-state"><div class="big-icon">🎬</div><h3>No videos yet</h3><p style="color:var(--text-secondary)">Be the first to upload!</p></div>`;
+                return;
+            }
+            for (let vid of videoArray) {
+                const owner = usersList.find(u => u.id === vid.user_id);
+                if (!owner) continue;
+                const likeCount = likesList.filter(l => l.video_id === vid.id).length;
+                const isOwner = currentUser && vid.user_id === currentUser.id;
+                const card = document.createElement('div');
+                card.className = 'video-card';
+                card.innerHTML = `
+              ${(showDeleteBtn && isOwner) ? `<button class="delete-btn" data-id="${vid.id}">🗑️</button>` : ''}
+              <div class="thumbnail">
+                🎬
+                <div class="play-overlay">▶️</div>
+                <span class="duration">${escapeHtml(vid.duration || '0:00')}</span>
+              </div>
+              <div class="card-info">
+                <div class="video-title">${escapeHtml(vid.title)}</div>
+                <div class="creator-name" data-user="${vid.user_id}">
+                  <span class="mini-avatar" style="${owner.avatar_url ? `background-image:url(${owner.avatar_url});background-size:cover;` : ''}">${owner.avatar_url ? '' : (owner.display_name?.charAt(0)?.toUpperCase() || '👤')}</span>
+                  ${escapeHtml(owner.display_name)}
+                </div>
+                <div class="stats">
+                  <span>👁️ ${formatNumber(vid.views || 0)}</span>
+                  <span>❤️ ${formatNumber(likeCount)}</span>
+                </div>
+              </div>
+            `;
+                card.querySelector('.thumbnail').onclick = () => openWatchPage(vid);
+                card.querySelector('.creator-name')?.addEventListener('click', (e) => { e.stopPropagation();
+                    showChannelPage(vid.user_id); });
+                const del = card.querySelector('.delete-btn');
+                if (del) del.onclick = (e) => { e.stopPropagation();
+                    deleteVideo(vid.id); };
+                c.appendChild(card);
+            }
+        }
+
+        // ----- WATCH PAGE -----
+        async function openWatchPage(video) {
+            await supabase.from('videos').update({ views: (video.views || 0) + 1 }).eq('id', video.id);
+            video.views = (video.views || 0) + 1;
+            const owner = usersList.find(u => u.id === video.user_id);
+            const likeCount = likesList.filter(l => l.video_id === video.id).length;
+            const isLiked = currentUser ? likesList.some(l => l.video_id === video.id && l.user_id === currentUser.id) :
+                false;
+            const html = `
+            <div class="video-player-container" id="videoPlayerContainer">
+              <button class="close-player" onclick="closeVideoPlayer()">✕</button>
+              <video src="${video.video_url}" controls autoplay playsinline></video>
+              <div class="player-info">
+                <div class="left" onclick="closeVideoPlayer(); showChannelPage('${video.user_id}')">
+                  <div class="p-avatar" style="${owner?.avatar_url ? `background-image:url(${owner.avatar_url});background-size:cover;` : ''}">${owner?.avatar_url ? '' : (owner?.display_name?.charAt(0)?.toUpperCase() || '👤')}</div>
+                  <div>
+                    <div class="p-name">${escapeHtml(owner?.display_name)}</div>
+                    <div class="p-views">${formatNumber(video.views || 0)} views</div>
+                  </div>
+                </div>
+                <button id="playerLikeBtn" class="${isLiked ? 'liked' : ''}">❤️ ${formatNumber(likeCount)}</button>
+              </div>
+            </div>
+          `;
+            document.body.insertAdjacentHTML('beforeend', html);
+
+            document.getElementById('playerLikeBtn')?.addEventListener('click', async () => {
+                if (!currentUser) { showToast("Sign in to like", true); return; }
+                const already = likesList.some(l => l.video_id === video.id && l.user_id === currentUser.id);
+                if (already) {
+                    await supabase.from('likes').delete().eq('video_id', video.id).eq('user_id', currentUser.id);
+                    const idx = likesList.findIndex(l => l.video_id === video.id && l.user_id === currentUser.id);
+                    if (idx !== -1) likesList.splice(idx, 1);
+                } else {
+                    await supabase.from('likes').insert({ video_id: video.id, user_id: currentUser.id });
+                    likesList.push({ video_id: video.id, user_id: currentUser.id });
+                }
+                const newCount = likesList.filter(l => l.video_id === video.id).length;
+                const btn = document.getElementById('playerLikeBtn');
+                if (btn) {
+                    btn.innerHTML = `❤️ ${formatNumber(newCount)}`;
+                    btn.classList.toggle('liked', !already);
+                }
+            });
+        }
+        window.closeVideoPlayer = function() { document.getElementById('videoPlayerContainer')?.remove(); };
+
+        // ----- CHANNEL -----
+        async function showChannelPage(uid) {
+            currentView = 'channel';
+            const cu = usersList.find(u => u.id === uid);
+            if (!cu) { renderHome(); return; }
+            const uv = videosList.filter(v => v.user_id === uid);
+            document.getElementById('mainContainer').innerHTML = `
+            <div class="channel-header">
+              <div class="channel-avatar" style="${cu.avatar_url ? `background-image:url(${cu.avatar_url});background-size:cover;` : ''}">${cu.avatar_url ? '' : (cu.display_name?.charAt(0)?.toUpperCase() || '👤')}</div>
+              <div class="channel-info">
+                <h2>${escapeHtml(cu.display_name)}</h2>
+                <p>📧 ${cu.email || ''}</p>
+                <div class="meta">
+                  <span>📹 ${uv.length} videos</span>
+                  <span>👥 ${usersList.length} users</span>
+                </div>
+              </div>
+            </div>
+            <div class="section-title"><span></span> ${escapeHtml(cu.display_name)}'s Videos</div>
+            <div class="video-grid" id="channelVidGrid"></div>
+          `;
+            renderVideoGrid(uv, 'channelVidGrid', false);
+        }
+
+        // ----- HOME -----
+        function renderHome() {
+            currentView = 'home';
+            document.getElementById('mainContainer').innerHTML = `
+            <div class="section-title"><span></span> 🌍 Global Videos</div>
+            <div class="video-grid" id="globalGrid"></div>
+          `;
+            renderVideoGrid(videosList, 'globalGrid', false);
+        }
+
+        // ----- MY VIDEOS -----
+        function renderMyVideos() {
+            currentView = 'myvideos';
+            const my = videosList.filter(v => v.user_id === currentUser?.id);
+            document.getElementById('mainContainer').innerHTML = `
+            <div class="section-title"><span></span> 📹 My Videos</div>
+            <div class="video-grid" id="myVideosGrid"></div>
+          `;
+            renderVideoGrid(my, 'myVideosGrid', true);
+        }
+
+        // ----- EVENT BINDINGS -----
+        document.getElementById('googleSignInBtn').onclick = handleGoogleSignIn;
+        document.getElementById('homeLogo').onclick = renderHome;
+        document.getElementById('myVideosNavBtn').onclick = () => { if (currentUser) renderMyVideos();
+            else showToast("Please sign in first", true); };
+        document.getElementById('avatarBtn').onclick = () => { if (currentUser && currentUser.id) showChannelPage(
+                currentUser.id); };
+
+        // ----- INIT -----
+        (async function init() {
+            const sess = localStorage.getItem('mysylox_session');
+            if (sess) {
+                try {
+                    const { userId, expires } = JSON.parse(sess);
+                    if (expires > Date.now()) { await checkSession(); return; }
+                } catch (e) {}
+            }
+            const logged = await checkSession();
+            if (!logged) {
+                document.getElementById('loginOverlay').style.display = 'flex';
+                document.getElementById('mainHeader').style.display = 'none';
+                document.querySelector('.container').style.display = 'none';
+            }
+        })();
+    </script>
+</body>
+</html>
